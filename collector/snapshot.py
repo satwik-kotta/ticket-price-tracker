@@ -1,4 +1,4 @@
-"""Take one snapshot of upcoming SeatGeek events and their ticket price stats.
+"""Take one snapshot of upcoming SeatGeek events and their demand scores.
 
 Runs on a schedule in GitHub Actions. Each run appends one gzipped CSV under
 data/snapshots/YYYY-MM-DD/HHMM.csv.gz, so prices for the same event can be followed
@@ -29,14 +29,16 @@ SEGMENTS = {
     "theater": "theater",
 }
 PER_PAGE = 100
-MAX_PAGES = 10
-HORIZON_DAYS = 60
+MAX_PAGES = 3          # top 300 events per segment and week
+HORIZON_DAYS = 56
+WINDOW_DAYS = 7
 
 FIELDS = [
     "snapshot_utc", "segment", "event_id", "title", "type", "taxonomy", "datetime_utc", "datetime_local",
     "announce_date", "venue_id", "venue_name", "city", "state", "capacity", "score", "popularity",
     "listing_count", "visible_listing_count", "lowest_price", "median_price", "average_price",
     "highest_price", "lowest_sg_base_price", "lowest_price_good_deals",
+    "performer_count", "top_performer", "top_performer_score", "top_performer_upcoming", "url",
 ]
 
 
@@ -58,6 +60,8 @@ def flatten(ev: dict, segment: str, snapshot: str) -> dict:
     venue = ev.get("venue") or {}
     stats = ev.get("stats") or {}
     tax = (ev.get("taxonomies") or [{}])[0].get("name")
+    performers = ev.get("performers") or []
+    top = max(performers, key=lambda p: p.get("score") or 0) if performers else {}
     return {
         "snapshot_utc": snapshot,
         "segment": segment,
@@ -83,16 +87,22 @@ def flatten(ev: dict, segment: str, snapshot: str) -> dict:
         "highest_price": stats.get("highest_price"),
         "lowest_sg_base_price": stats.get("lowest_sg_base_price"),
         "lowest_price_good_deals": stats.get("lowest_price_good_deals"),
+        "performer_count": len(performers),
+        "top_performer": top.get("name"),
+        "top_performer_score": top.get("score"),
+        "top_performer_upcoming": top.get("num_upcoming_events"),
+        "url": ev.get("url"),
     }
 
 
 def collect(client_id: str, now: datetime | None = None, fetch=get) -> list[dict]:
     now = now or datetime.now(timezone.utc)
     snapshot = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    lo = now.strftime("%Y-%m-%dT%H:%M:%S")
-    hi = (now + timedelta(days=HORIZON_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
     rows, seen = [], set()
-    for segment, taxonomy in SEGMENTS.items():
+    windows = [(now + timedelta(days=d), now + timedelta(days=min(d + WINDOW_DAYS, HORIZON_DAYS)))
+               for d in range(0, HORIZON_DAYS, WINDOW_DAYS)]
+    for (segment, taxonomy), (w0, w1) in ((s, w) for s in SEGMENTS.items() for w in windows):
+        lo, hi = w0.strftime("%Y-%m-%dT%H:%M:%S"), w1.strftime("%Y-%m-%dT%H:%M:%S")
         for page in range(1, MAX_PAGES + 1):
             data = fetch({
                 "client_id": client_id, "taxonomies.name": taxonomy, "datetime_utc.gte": lo,
@@ -130,8 +140,7 @@ def main() -> None:
     now = datetime.now(timezone.utc)
     rows = collect(client_id, now)
     path = write(rows, now)
-    priced = sum(1 for r in rows if r["lowest_price"] is not None)
-    print(f"{len(rows)} events, {priced} with prices -> {path.relative_to(ROOT)}")
+    print(f"{len(rows)} events -> {path.relative_to(ROOT)}")
     if not rows:
         sys.exit("No events returned, check the client id")
 

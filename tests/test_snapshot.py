@@ -18,6 +18,8 @@ def fake_event(i, tax):
         "stats": {"listing_count": 120, "visible_listing_count": 110, "lowest_price": 45,
                   "median_price": 90, "average_price": 110, "highest_price": 900,
                   "lowest_sg_base_price": 38, "lowest_price_good_deals": 60},
+        "performers": [{"name": "A", "score": 0.4, "num_upcoming_events": 3},
+                       {"name": "B", "score": 0.9, "num_upcoming_events": 40}],
     }
 
 
@@ -36,8 +38,12 @@ def test_collect_pages_dedupes_and_flattens(tmp_path, monkeypatch):
     rows = snapshot.collect("x", now, fetch)
     # 100 shared ids on page 1 are deduplicated across segments
     assert len({r["event_id"] for r in rows}) == len(rows)
-    assert rows[0]["lowest_price"] == 45 and rows[0]["city"] == "Los Angeles"
+    assert rows[0]["city"] == "Los Angeles"
+    assert (rows[0]["top_performer"], rows[0]["top_performer_upcoming"], rows[0]["performer_count"]) == ("B", 40, 2)
     assert all(c["page"] <= 2 for c in calls)
+    # 8 weekly windows per segment, and windows stay inside the 56 day horizon
+    assert len({(c["taxonomies.name"], c["datetime_utc.gte"]) for c in calls}) == 3 * 8
+    assert max(c["datetime_utc.lte"] for c in calls) == "2026-12-30T12:00:00"
 
     monkeypatch.setattr(snapshot, "OUT", tmp_path)
     path = snapshot.write(rows, now)
@@ -56,23 +62,27 @@ def tm_event(i, seg):
                       "status": {"code": "onsale"}},
             "sales": {"public": {"startDateTime": "2026-08-01T17:00:00Z"}},
             "classifications": [{"genre": {"name": "Rock"}, "subGenre": {"name": "Pop"}}],
-            "priceRanges": [{"type": "standard including fees", "currency": "USD", "min": 80, "max": 300},
-                            {"type": "standard", "currency": "USD", "min": 65, "max": 250}],
+            "sales": {"public": {"startDateTime": "2026-08-01T17:00:00Z", "endDateTime": "2026-12-01T03:00:00Z"},
+                      "presales": [{"startDateTime": "2026-07-30T17:00:00Z"}, {"startDateTime": "2026-07-29T17:00:00Z"}]},
+            "ticketLimit": {"info": "8 per order"}, "promoter": {"name": "Live Nation"},
             "_embedded": {"venues": [{"id": "v1", "name": "Forum", "city": {"name": "Inglewood"},
-                                      "state": {"stateCode": "CA"}}], "attractions": [{"id": "a1"}]}}
+                                      "state": {"stateCode": "CA"}}],
+                          "attractions": [{"id": "a1", "name": "Band", "upcomingEvents": {"_total": 52}}]}}
 
 
 def test_ticketmaster_collect(tmp_path, monkeypatch):
     def fetch(p):
         n = 200 if p["page"] == 0 else 3
-        return {"_embedded": {"events": [tm_event(i + 1000 * p["page"], p["segmentName"]) for i in range(n)]},
+        tag = p["segmentName"] + p["startDateTime"]
+        return {"_embedded": {"events": [tm_event(i + 1000 * p["page"], tag) for i in range(n)]},
                 "page": {"totalPages": 2}}
 
     monkeypatch.setattr(ticketmaster.time, "sleep", lambda s: None)
     rows = ticketmaster.collect("k", datetime(2026, 11, 4, tzinfo=timezone.utc), fetch)
-    assert len(rows) == 3 * 203
+    assert len(rows) == 3 * 8 * 203
     r = rows[0]
-    assert (r["price_min"], r["price_type"], r["city"], r["status"]) == (65, "standard", "Inglewood", "onsale")
+    assert (r["city"], r["status"], r["presale_count"], r["first_presale_start"]) == ("Inglewood", "onsale", 2, "2026-07-29T17:00:00Z")
+    assert (r["attraction_upcoming"], r["has_ticket_limit"], r["promoter"]) == (52, 1, "Live Nation")
     monkeypatch.setattr(ticketmaster, "OUT", tmp_path)
     with gzip.open(ticketmaster.write(rows, datetime(2026, 11, 4, tzinfo=timezone.utc)), "rt") as f:
         assert len(list(csv.DictReader(f))) == len(rows)
