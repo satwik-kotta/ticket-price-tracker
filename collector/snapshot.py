@@ -99,6 +99,8 @@ def collect(client_id: str, now: datetime | None = None, fetch=get) -> list[dict
                 "datetime_utc.lte": hi, "sort": "score.desc", "per_page": PER_PAGE, "page": page,
             })
             events = data.get("events") or []
+            if os.environ.get("SNAPSHOT_DEBUG") and page == 1 and events:
+                print("DEBUG", segment, json.dumps({k: events[0].get(k) for k in ("stats", "id", "url")})[:1500])
             for ev in events:
                 if ev.get("id") in seen:
                     continue
