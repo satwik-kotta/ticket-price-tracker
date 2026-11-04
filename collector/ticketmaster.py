@@ -90,6 +90,13 @@ def collect(api_key: str, now: datetime | None = None, fetch=get) -> list[dict]:
                 "endDateTime": hi, "sort": "relevance,desc", "size": PAGE_SIZE, "page": page,
             })
             events = (data.get("_embedded") or {}).get("events") or []
+            if os.environ.get("SNAPSHOT_DEBUG") and page == 0 and events:
+                keys = {}
+                for ev in events:
+                    for k in ev:
+                        keys[k] = keys.get(k, 0) + 1
+                print("DEBUG", segment, json.dumps(keys))
+                print("DEBUG", segment, json.dumps(events[0])[:2500])
             for ev in events:
                 if ev.get("id") in seen:
                     continue

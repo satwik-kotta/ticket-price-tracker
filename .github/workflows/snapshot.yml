@@ -23,7 +23,7 @@ jobs:
       - name: Take Ticketmaster snapshot
         env:
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
-        run: python collector/ticketmaster.py
+        run: SNAPSHOT_DEBUG=1 python collector/ticketmaster.py
       - name: Commit snapshot
         run: |
           git config user.name "snapshot-bot"
