@@ -13,10 +13,10 @@ Following the same event across snapshots gives its price and demand curve by da
 
 ## Questions
 
-1. How do the lowest and median price move in the last 60 days before an event, by category?
-2. How fast do listings appear or sell out, and does supply lead price?
+1. How do the cheapest and top prices move in the last 60 days before an event, by category?
+2. Does demand (SeatGeek popularity) rise before prices do?
 3. When is the cheapest time to buy, and how much does waiting save or cost?
-4. Which events are most at risk of selling out or of prices collapsing near the date?
+4. Which events go off sale or sell out first, and what did their prices and demand look like beforehand?
 
 ## How it works
 
@@ -27,7 +27,7 @@ collector/ticketmaster.py      Ticketmaster Discovery API, one row per event per
 tests/test_snapshot.py         paging, de-duplication and file format, with a mocked API
 ```
 
-Fields: event, category, venue, city, capacity, event time, announce date, SeatGeek score and popularity, listing count, and lowest, median, average and highest price.
+Fields: event, category, genre, venue, city, event time, sale status and public sale date, Ticketmaster min and max price, and SeatGeek score and popularity.
 
 ## Run it locally
 
