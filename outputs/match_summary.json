@@ -1,0 +1,57 @@
+{
+  "seatgeek_events": 7829,
+  "ticketmaster_events": 10164,
+  "snapshots": {
+    "seatgeek": 6,
+    "ticketmaster": 4
+  },
+  "matched_events": 3268,
+  "status_counts": {
+    "onsale": 3178,
+    "offsale": 60,
+    "rescheduled": 25,
+    "cancelled": 5
+  },
+  "by_status": [
+    {
+      "status": "offsale",
+      "events": 60,
+      "median_score": 0.4854803863,
+      "median_listings": null
+    },
+    {
+      "status": "onsale",
+      "events": 3178,
+      "median_score": 0.49907527305,
+      "median_listings": null
+    }
+  ],
+  "offsale_share_by_score_quintile": [
+    {
+      "q": "Q1",
+      "events": 648,
+      "offsale_share": 0.021604938271604937
+    },
+    {
+      "q": "Q2",
+      "events": 647,
+      "offsale_share": 0.01854714064914992
+    },
+    {
+      "q": "Q3",
+      "events": 648,
+      "offsale_share": 0.018518518518518517
+    },
+    {
+      "q": "Q4",
+      "events": 647,
+      "offsale_share": 0.00927357032457496
+    },
+    {
+      "q": "Q5",
+      "events": 648,
+      "offsale_share": 0.024691358024691357
+    }
+  ],
+  "mann_whitney_p": 0.7828212547744139
+}
