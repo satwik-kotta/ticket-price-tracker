@@ -1,3 +1,4 @@
 polars>=1.0
 scipy>=1.11
 pytest>=8.0
+pyfixest>=0.18

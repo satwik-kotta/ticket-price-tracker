@@ -1,0 +1,45 @@
+{
+  "seatgeek_snapshots": 45,
+  "seatgeek_events": 14820,
+  "event_snapshot_rows": 307078,
+  "first_snapshot": "2026-11-04 18:06:45+00:00",
+  "last_snapshot": "2026-11-22 06:43:03+00:00",
+  "curve_peak": {
+    "days_to_event": 5,
+    "score_change_pct": 13.567627208614685,
+    "ci_low_pct": 12.611049011424026,
+    "ci_high_pct": 14.532331090233065
+  },
+  "curve_event_day": {
+    "days_to_event": 0,
+    "score_change_pct": 1.9002294106365447,
+    "ci_low_pct": 0.9093128878612688,
+    "ci_high_pct": 2.9008766066966674
+  },
+  "raw_growth_15_days_to_final_day": [
+    {
+      "segment": "concert",
+      "events": 294,
+      "median_growth_pct": 11.412474338133505,
+      "share_rising": 0.8945578231292517
+    },
+    {
+      "segment": "sports",
+      "events": 251,
+      "median_growth_pct": 9.66432767238905,
+      "share_rising": 0.9203187250996016
+    },
+    {
+      "segment": "theater",
+      "events": 199,
+      "median_growth_pct": 13.203509346220876,
+      "share_rising": 0.8844221105527639
+    }
+  ],
+  "ticketmaster_offsale": {
+    "events_seen_on_sale": 14713,
+    "switched_to_off_sale": 21,
+    "max_hours_before_start": 17.0,
+    "switched_more_than_a_day_before_sale_end": 0
+  }
+}
